@@ -43,7 +43,9 @@ if !exists('g:vimBoxLinterOkSymbol')
 endif
 
 
-let g:vimreason_ocamlmerlin_path=''
+if !exists('g:vimreason_ocamlmerlin_path')
+  let g:vimreason_ocamlmerlin_path = "ocamlmerlin"
+endif
 
 " From auto-format plugin:
 " https://github.com/Chiel92/vim-autoformat/blob/master/plugin/autoformat.vim
