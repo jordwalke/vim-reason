@@ -107,6 +107,10 @@ function! esy#FetchProjectRoot()
     if filereadable(packageJsonPath)
       return [l:cwd, 'package.json']
     endif
+    let opamFiles = globpath(cwd, '*.opam', 0, 1)
+    if !empty(opamFiles) && filereadable(opamFiles[0])
+      return [l:cwd, opamFiles[0]]
+    endif
     let bsConfigJsonPath = resolve(l:cwd . '/bsconfig.json')
     if filereadable(bsConfigJsonPath)
       " It is unfortunate that we need to read the file just to tell if it has
