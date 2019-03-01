@@ -16,6 +16,7 @@ endif
 " Basic keywords {{{2
 syn keyword   reasonConditional try switch if else for while
 syn keyword   reasonOperator    as to downto
+syn match     reasonSemicolon   /;/ display
 
 " From xolox shell
 " URL = escape('\<\w\{3,}://\(\(\S\&[^"]\)*\w\)\+[/?#]\?', '/')
@@ -25,41 +26,119 @@ syn keyword   reasonOperator    as to downto
 
 syntax match reasonCommentURL /\<\w\{3,}:\/\/\(\(\S\&[^"]\)*\w\)\+[\/?#]\?/ contained containedin=reasonCommentLine,reasonComment,reasonCommentBlockDoc,reasonString,reasonMultilineString
 syntax match reasonCommentMail /\<\w[^@ \t\r<>]*\w@\w[^@ \t\r<>]\+\w\>/ contained containedin=reasonCommentLine,reasonComment,reasonCommentBlockDoc,reasonString,reasonMultilineString
+"
 " syn keyword   reasonKeyword     fun nextgroup=reasonFuncName skipwhite skipempty
 syn match     reasonAssert      "\<assert\(\w\)*"
 syn match     reasonFailwith    "\<failwith\(\w\)*"
 
-syn keyword   reasonStorage     when where fun mutable class pub pri val inherit let external rec nonrec and module type exception open include constraint
+syn keyword   reasonTypeKeyword   type       skipwhite nextgroup=reasonRecurseType,reasonTypeDecl
+syn keyword   reasonRecurseType   rec nonrec skipwhite nextgroup=reasonTypeDecl
+
+syn keyword   reasonModuleKeyword module     skipwhite nextgroup=reasonRecurseModule,reasonModPath
+syn keyword   reasonRecurseModule rec nonrec skipwhite nextgroup=reasonModPath
+
+syn keyword   reasonStorage            let        skipwhite nextgroup=reasonRecurseIdentifier,reasonIdentifier
+syn keyword   reasonRecurseIdentifier  rec nonrec skipwhite nextgroup=reasonIdentifier
+
+syn keyword   reasonOpenKeyword   open skipwhite nextgroup=reasonModPath
+
+syn keyword   reasonStorage     when where fun mutable class pub pri val inherit and exception include constraint
 " FIXME: Scoped impl's name is also fallen in this category
 
-syn match     reasonIdentifier  contains=reasonIdentifierPrime "\%([^[:cntrl:][:space:][:punct:][:digit:]]\|_\)\%([^[:cntrl:][:punct:][:space:]]\|_\)*" display contained
-syn match     reasonFuncName    "\%([^[:cntrl:][:space:][:punct:][:digit:]]\|_\)\%([^[:cntrl:][:punct:][:space:]]\|_\)*" display contained
-"
-" syn match labelArgument "\(\l\|_\)\(\w\|'\)*::\(?\)\?"lc=0   "Allows any space between label name and ::
-" syn match labelArgumentPunned "::\(?\)\?\(\l\|_\)\(\w\|'\)*"lc=0   "Allows any space between label name and ::
-syn match labelArgument "\~\(\l\|_\)\(\w\|'\)*"lc=0   "Allows any space between label name and ::
-syn match labelArgumentPunned "\~\(\l\|_\)\(\w\|'\)*\(?\)\?"lc=0   "Allows any space between label name and ::
+syn match     reasonUnit /()/ display
 
-syn match    reasonConstructor  "\<\u\(\w\|'\)*\>"
+syn match     reasonIdentifier  /\<\%(\l\|_\)\%(\k\|'\)*\>/  contained display
+syn match     reasonTypeDecl     /\<\%(\l\|_\)\%(\k\|'\)*\>/ contained display skipwhite skipnl nextgroup=reasonTypeDefAssign
+syn match     reasonTypeDefAssign /=/                        contained display skipwhite skipnl nextgroup=reasonVariantDef,reasonTypeDefRecord,reasonTypeDefVariantSeparator
+
+syn match     reasonTypeDefVariantSeparator /|/     contained display skipwhite skipnl nextgroup=reasonVariantDef
+syn region    reasonTypeDefRecord start="{" end="}" contained display skipwhite skipnl contains=reasonRecordFieldName,reasonRecordFieldTypeSeparator,reasonRecordFieldSeparator
+
+" record type definition
+syn match     reasonRecordFieldName /\<\%(\l\|_\)\%(\k\|'\)*\>/            contained display skipwhite skipnl nextgroup=reasonRecordFieldTypeSeparator
+syn match     reasonRecordFieldTypeSeparator /:/                           contained display skipwhite skipnl nextgroup=reasonRecordFieldUnaryFunction,reasonRecordFieldFunctionTypeDef,reasonRecordFieldType,reasonRecordFieldTypeModuleRef
+syn match     reasonRecordFieldType /\<\%(\l\|_\)\%(\k\|'\)*\( *=>\)\@!\>/ contained display skipwhite skipnl nextgroup=reasonRecordFieldSeparator,reasonRecordFieldTypeArgList
+syn match     reasonRecordFieldTypeModuleRef "\<\u\(\w\|'\)* *\."he=e-1    contained display skipwhite skipnl nextgroup=reasonRecordFieldType,reasonRecordFieldTypeModuleRef
+syn region    reasonRecordFieldTypeArgList start="(" end=")"               contained display skipwhite skipnl contains=reasonRecordFieldTypeArg,reasonRecordFieldTypeArgModuleRef nextgroup=reasonRecordFieldSeparator
+syn match     reasonRecordFieldTypeArg /\<\%(\l\|_\)\%(\k\|'\)*\>/         contained display skipwhite skipnl nextgroup=reasonRecordFieldTypeListSeparator
+syn match     reasonRecordFieldTypeArgModuleRef "\<\u\(\w\|'\)* *\."he=e-1 contained display skipwhite skipnl nextgroup=reasonRecordFieldTypeArg,reasonRecordFieldTypeArgModuleRef
+syn match     reasonRecordFieldSeparator /,/                               contained display skipwhite skipnl nextgroup=reasonRecordFieldName
+
+syn match     reasonRecordFieldFunctionTypeDef /\((.*) *=>\)\@=/              contained display skipwhite skipnl nextgroup=reasonRecordFieldFunctionArguments
+syn region    reasonRecordFieldFunctionArguments start="(" end=")"            contained display skipwhite skipnl contains=reasonRecordFieldFunctionArgument nextgroup=reasonRecordFieldFunctionArrowCharacter
+syn match     reasonRecordFieldFunctionArgument "\(\l\|_\)\(\w\|'\)*"         contained display skipwhite skipnl nextgroup=reasonRecordFieldFunctionArgumentSeparator
+syn match     reasonRecordFieldFunctionArrowCharacter /=>/                    contained display skipwhite skipnl nextgroup=reasonRecordFieldFunctionReturnType
+syn match     reasonRecordFieldFunctionReturnType /\<\%(\l\|_\)\%(\k\|'\)*\>/ contained display skipwhite skipnl nextgroup=reasonRecordFieldSeparator
+syn match     reasonRecordFieldUnaryFunction /\(\(\l\|_\)\(\w\|'\)* *=>\)\@=/ contained display skipwhite skipnl nextgroup=reasonRecordFieldUnaryFunctionArgument
+syn match     reasonRecordFieldUnaryFunctionArgument "\(\l\|_\)\(\w\|'\)*"    contained display skipwhite skipnl nextgroup=reasonRecordFieldFunctionArrowCharacter
+syn match     reasonRecordFieldFunctionArgumentSeparator /,/                  contained display skipwhite skipnl nextgroup=reasonRecordFieldUnaryFunctionArgument
+
+" variant type definition
+syn match     reasonVariantDef  "\<\u\(\w\|'\)*\>\.\@!"              display skipwhite skipnl nextgroup=reasonVariantArgsDef
+syn region    reasonVariantArgsDef start="(" end=")"       contained display skipwhite skipnl contains=reasonVariantArg nextgroup=reasonTypeDefVariantSeparator
+syn match     reasonVariantArg /\<\%(\l\|_\)\%(\k\|'\)*\>/ contained display skipwhite skipnl nextgroup=reasonVariantArgListSeparator
+syn match     reasonVariantArgListSeparator /,/            contained display skipwhite skipnl nextgroup=reasonVariantArg
+
+" function definition
+syn match     reasonFunctionDef /\((.*) *=>\)\@=/                       display skipwhite skipnl nextgroup=reasonFunctionArguments
+syn region    reasonFunctionArguments start="(" end=")"       contained display skipwhite skipnl contains=reasonArgument,reasonLabeledArgument nextgroup=reasonArrowCharacter
+syn match     reasonArgument "\(\l\|_\)\(\w\|'\)*"            contained display skipwhite skipnl nextgroup=reasonArgumentSeparator
+syn match     reasonLabeledArgument "\~\(\l\|_\)\(\w\|'\)*"   contained display skipwhite skipnl nextgroup=reasonArgumentPunning,reasonArgumentSeparator,reasonLabeledOptionalArgument,reasonArgumentTypeDecl
+syn match     reasonLabeledOptionalArgument /=?/              contained display skipwhite skipnl nextgroup=reasonArgumentSeparator
+syn keyword   reasonArgumentPunning as                        contained display skipwhite skipnl nextgroup=reasonArgumentAlias
+syn match     reasonArgumentAlias /\<\%(\l\|_\)\%(\k\|'\)*\>/ contained display skipwhite skipnl nextgroup=reasonArgumentTypeDecl,reasonArgumentSeparator
+syn match     reasonArgumentTypeDecl /:/                      contained display skipwhite skipnl nextgroup=reasonArgumentType
+syn match     reasonArgumentType /\<\%(\l\|_\)\%(\k\|'\)*\>/  contained display skipwhite skipnl nextgroup=reasonArgumentSeparator
+syn match     reasonArgumentSeparator /,/                     contained display skipwhite skipnl nextgroup=reasonArgument,reasonLabeledArgument
+" unary function
+syn match     reasonUnaryFunctionDef /\(\(\l\|_\)\(\w\|'\)* *=>\)\@=/           display skipwhite skipnl nextgroup=reasonUnaryFunctionArgument
+syn match     reasonUnaryFunctionArgument "\(\l\|_\)\(\w\|'\)*"       contained display skipwhite skipnl nextgroup=reasonArrowCharacter
+
+syn match     reasonConstructor  "\<\u\(\w\|'\)*\>" display
 " Polymorphic variants
-syn match    reasonConstructor  "`\w\(\w\|'\)*\>"
+syn match     reasonConstructor  "`\w\(\w\|'\)*\>" display
 
-syn match    reasonModPath  "\<\u\(\w\|'\)* *\."he=e-1
-syn match    reasonModPath  "\(\<open\s\+\)\@<=\u\(\w\|\.\)*"
-syn match    reasonModPath  "\(\<include\s\+\)\@<=\u\(\w\|\.\)*"
-syn match    reasonModPath  "\(\<module\s\+\)\@<=\u\(\w\|\.\)*"
-syn match    reasonModPath  "\(\<module\s\+\u\w*\s*=\s*\)\@<=\u\(\w\|\.\)*"
+"syn match     reasonModPath  /\<\u\(\w\|\.\)*\>/ display
+syn match     reasonModPath  "\<\u\(\w\|'\)* *\."he=e-1 display
+syn match     reasonModPath  "\(\<include\s\+\)\@<=\u\(\w\|\.\)*" display
 
+syn keyword   reasonExternalKeyword external                                   skipwhite skipnl nextgroup=reasonExternalDecl
+syn match     reasonExternalDecl /\<\%(\l\|_\)\%(\k\|'\)*\>/ contained display skipwhite skipnl nextgroup=reasonExternalSeparator
+syn match     reasonExternalSeparator /:/                    contained display skipwhite skipnl nextgroup=reasonExternalUnaryFunctionDef,reasonExternalFuncDef,reasonExternalValueDef,reasonExternalValueDefModuleRef
+
+" external function definition
+syn match     reasonExternalFuncDef /\((.*) *=>\)\@=/                             contained display skipwhite skipnl nextgroup=reasonExternalFuncDefArguments
+syn region    reasonExternalFuncDefArguments start="(" end=")"                    contained display skipwhite skipnl contains=reasonExternalFuncDefArgument,reasonExternalFuncDefArgumentModuleRef nextgroup=reasonExternalFuncDefArrowCharacter
+syn match     reasonExternalFuncDefArgument "\(\l\|_\)\(\w\|'\)*"                 contained display skipwhite skipnl nextgroup=reasonExternalFuncDefArgumentSeparator,reasonExternalFuncDefTypeArgList
+syn match     reasonExternalFuncDefArgumentModuleRef "\<\u\(\w\|'\)* *\."he=e-1   contained display skipwhite skipnl nextgroup=reasonExternalFuncDefArgument,reasonExternalFuncDefArgumentModuleRef
+syn match     reasonExternalFuncDefArgumentSeparator /,/                          contained display skipwhite skipnl nextgroup=reasonExternalFuncDefArgument
+syn region    reasonExternalFuncDefTypeArgList start="(" end=")"                  contained display skipwhite skipnl contains=reasonExternalFuncDefTypeArg,reasonExternalFuncDefTypeArgModuleRef
+syn match     reasonExternalFuncDefTypeArg /\<\%(\l\|_\)\%(\k\|'\)*\>/            contained display skipwhite skipnl nextgroup=reasonExternalFuncDefTypeArgListSeparator
+syn match     reasonExternalFuncDefTypeArgModuleRef "\<\u\(\w\|'\)* *\."he=e-1    contained display skipwhite skipnl nextgroup=reasonExternalFuncDefTypeArg,reasonExternalFuncDefTypeArgModuleRef
+syn match     reasonExternalFuncDefTypeArgListSeparator /,/                       contained display skipwhite skipnl nextgroup=reasonVariantArg
+syn match     reasonExternalFuncDefArrowCharacter /=>/                            contained display skipwhite skipnl nextgroup=reasonExternalFuncDefReturnType,reasonExternalFuncDefReturnTypeModuleRef
+syn match     reasonExternalFuncDefReturnType /\<\%(\l\|_\)\%(\k\|'\)*\>/         contained display skipwhite skipnl nextgroup=reasonExternalFuncDefTypeArgList
+syn match     reasonExternalFuncDefReturnTypeModuleRef "\<\u\(\w\|'\)* *\."he=e-1 contained display skipwhite skipnl nextgroup=reasonExternalFuncDefReturnType,reasonExternalFuncDefReturnTypeModuleRef
+" external unary function
+syn match     reasonExternalUnaryFunctionDef /\(\(\l\|_\)\(\w\|'\)* *=>\)\@=/ contained display skipwhite skipnl nextgroup=reasonExternalUnaryFunctionArgument
+syn match     reasonExternalUnaryFunctionArgument "\(\l\|_\)\(\w\|'\)*"       contained display skipwhite skipnl nextgroup=reasonExternalUnaryFunctionArrowCharacter
+syn match     reasonExternalUnaryFunctionArrowCharacter /=>/                  contained display skipwhite skipnl nextgroup=reasonExternalFuncDefReturnType,reasonExternalFuncDefReturnTypeModuleRef
+
+" external value definition
+syn match     reasonExternalValueDef /\<\%(\l\|_\)\%(\k\|'\)*\( *=>\)\@!\>/     contained display skipwhite skipnl nextgroup=reasonExternalValueDefTypeArgList
+syn match     reasonExternalValueDefModuleRef "\<\u\(\w\|'\)* *\."he=e-1        contained display skipwhite skipnl nextgroup=reasonExternalValueDef,reasonExternalValueDefModuleRef
+syn region    reasonExternalValueDefTypeArgList start="(" end=")"               contained display skipwhite skipnl contains=reasonExternalValueDefTypeArg,reasonExternalValueDefTypeArgModuleRef nextgroup=reasonRecordFieldSeparator
+syn match     reasonExternalValueDefTypeArg /\<\%(\l\|_\)\%(\k\|'\)*\>/         contained display skipwhite skipnl nextgroup=reasonExternalValueDefListSeparator
+syn match     reasonExternalValueDefTypeArgModuleRef "\<\u\(\w\|'\)* *\."he=e-1 contained display skipwhite skipnl nextgroup=reasonExternalValueDefTypeArg,reasonExternalValueDefTypeArgModuleRef
+
+" record field access
+syn match     reasonRecordFieldAccess /\(\<\%(\l\|_\)\%(\k\|'\)*\>\.\)\@<=\<\%(\l\|_\)\%(\k\|'\)*\>/ display
 
 " {} are handled by reasonFoldBraces
-
 
 syn region reasonMacroRepeat matchgroup=reasonMacroRepeatDelimiters start="$(" end=")" contains=TOP nextgroup=reasonMacroRepeatCount
 syn match reasonMacroRepeatCount ".\?[*+]" contained
 syn match reasonMacroVariable "$\w\+"
-
-" Built-in types {{{2
-syn keyword   reasonType        result int float option list array unit ref bool string
 
 " Things from the libstd v1 prelude (src/libstd/prelude/v1.rs) {{{2
 " This section is just straight transformation of the contents of the prelude,
@@ -83,10 +162,6 @@ syn keyword reasonTrait AsRef AsMut Into From
 syn keyword reasonTrait Default
 syn keyword reasonTrait Iterator Extend IntoIterator
 syn keyword reasonTrait DoubleEndedIterator ExactSizeIterator
-syn keyword reasonEnum Option
-syn keyword reasonConstructor Some None
-syn keyword reasonEnum Result
-syn keyword reasonConstructor Ok Error
 
 " Other syntax {{{2
 syn keyword   reasonSelf        self
@@ -97,12 +172,12 @@ syn keyword   reasonBoolean     true false
 " [:upper:] as it depends upon 'noignorecase'
 "syn match     reasonCapsIdent    display "[A-Z]\w\(\w\)*"
 
-syn match     reasonOperator     display "\%(+\|-\|/\|*\|=\|\^\|&\||\|!\|>\|<\|%\)=\?"
+syn match     reasonOperator     "\%($\|:\|?\|\~\|\.\|#\|@\|+\|-\|/\|*\|=\|\^\|&\||\|!\|>\|<\|%\)\+" display
 " This one isn't *quite* right, as we could have binary-& with a reference
 
 " This isn't actually correct; a closure with no arguments can be `|| { }`.
 " Last, because the & in && isn't a sigil
-syn match     reasonOperator     display "&&\|||"
+"syn match     reasonOperator     display "&&\|||"
 " This is reasonArrowCharacter rather than reasonArrow for the sake of matchparen,
 " so it skips the ->; see http://stackoverflow.com/a/30309949 for details.
 syn match     reasonArrowCharacter display "=>"
@@ -181,7 +256,6 @@ hi def link reasonDecNumber       reasonNumber
 hi def link reasonHexNumber       reasonNumber
 hi def link reasonOctNumber       reasonNumber
 hi def link reasonBinNumber       reasonNumber
-hi def link reasonIdentifierPrime reasonIdentifier
 hi def link reasonTrait           reasonType
 
 hi def link reasonMacroRepeatCount   reasonMacroRepeatDelimiters
@@ -198,20 +272,16 @@ hi def link reasonCharacterInvalidUnicode reasonCharacterInvalid
 hi def link reasonCharacter     Character
 hi def link reasonNumber        Number
 hi def link reasonBoolean       Boolean
-hi def link reasonEnum          reasonType
-hi def link reasonConstructor   Constant
+"hi def link reasonConstructor   Constant
 hi def link reasonModPath       Include
-hi def link reasonConstant      Constant
 hi def link reasonSelf          Constant
 hi def link reasonFloat         Float
-hi def link reasonArrowCharacter reasonOperator
-hi def link reasonOperator      Keyword
 hi def link reasonKeyword       Keyword
 hi def link reasonConditional   Conditional
 hi def link reasonIdentifier    Identifier
 hi def link reasonCapsIdent     reasonIdentifier
-hi def link reasonFunction      Function
-hi def link reasonFuncName      Function
+hi def link reasonFunctionDef      Function
+hi def link reasonUnaryFunctionDef      Function
 hi def link reasonShebang       Comment
 hi def link reasonCommentLine   Comment
 " hi def link reasonCommentLineDoc Comment
@@ -222,12 +292,63 @@ hi def link reasonFailwith      PreCondit
 hi def link reasonType          Type
 hi def link reasonTodo          Todo
 hi def link reasonAttribute     PreProc
-hi def link reasonStorage       Keyword
 hi def link reasonObsoleteStorage Error
-
 
 highlight def link reasonCommentURL Underlined
 highlight def link reasonCommentMail Underlined
+
+" keywords
+hi def link reasonRecurseType reasonKeyword
+hi def link reasonModuleKeyword reasonKeyword
+hi def link reasonStorage reasonKeyword
+hi def link reasonTypeKeyword reasonKeyword
+hi def link reasonExternalKeyword reasonKeyword
+hi def link reasonRecurseIdentifier reasonKeyword
+hi def link reasonRecurseModule reasonKeyword
+
+" operators
+hi def link reasonArgumentPunning reasonOperator
+
+" separators
+hi def link reasonArrowCharacter reasonSeparator
+hi def link reasonRecordFieldFunctionArrowCharacter reasonSeparator
+hi def link reasonExternalFuncDefArrowCharacter reasonSeparator
+hi def link reasonExternalUnaryFunctionArrowCharacter reasonSeparator
+hi def link reasonLabeledOptionalArgument reasonSeparator
+hi def link reasonRecordFieldFunctionArgumentSeparator reasonSeparator
+hi def link reasonExternalSeparator reasonSeparator
+hi def link reasonRecordFieldTypeSeparator reasonSeparator
+hi def link reasonRecordFieldSeparator reasonSeparator
+hi def link reasonArgumentSeparator reasonSeparator
+hi def link reasonTypeDefVariantSeparator reasonSeparator
+hi def link reasonVariantArgListSeparator reasonSeparator
+hi def link reasonRecordFieldTypeListSeparator reasonSeparator
+hi def link reasonSemicolon reasonSeparator
+
+" include path
+hi def link reasonRecordFieldTypeModuleRef reasonModPath
+hi def link reasonRecordFieldTypeArgModuleRef reasonModPath
+hi def link reasonExternalFuncDefReturnTypeModuleRef reasonModPath
+hi def link reasonExternalFuncDefTypeArgModuleRef reasonModPath
+hi def link reasonExternalValueDefModuleRef reasonModPath
+hi def link reasonExternalFuncDefArgumentModuleRef reasonModPath
+
+" types
+hi def link reasonRecordFieldType reasonType
+hi def link reasonVariantArg reasonType
+hi def link reasonRecordFieldTypeArg reasonType
+hi def link reasonExternalFuncDefTypeArg reasonType
+hi def link reasonExternalValueDefTypeArg reasonType
+hi def link reasonExternalFuncDefArgument reasonType
+hi def link reasonExternalValueDef reasonType
+hi def link reasonRecordFieldFunctionArgument reasonType
+hi def link reasonRecordFieldFunctionReturnType reasonType
+hi def link reasonRecordFieldUnaryFunctionArgument reasonType
+hi def link reasonExternalFuncDefReturnType reasonType
+hi def link reasonExternalUnaryFunctionArgument reasonType
+hi def link reasonArgumentType reasonType
+
+syntax sync match reasonSemicolonSync grouphere NONE ";"
 
 syn sync minlines=200
 syn sync maxlines=500
