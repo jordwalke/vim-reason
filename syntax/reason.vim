@@ -47,7 +47,13 @@ syn keyword   reasonStorage     when where fun mutable class pub pri val inherit
 
 syn match     reasonUnit /()/ display
 
-syn match     reasonIdentifier  /\<\%(\l\|_\)\%(\k\|'\)*\>/  contained display
+syn match     reasonIdentifier  /\<\%(\l\|_\)\%(\k\|'\)*\>/  contained display nextgroup=reasonIdentifierTypeSeparator
+syn match     reasonIdentifierTypeSeparator /:/ contained display skipwhite skipnl nextgroup=reasonIdentifierUnaryFunction,reasonIdentifierFunctionTypeDef,reasonIdentifierType,reasonIdentifierTypeModuleRef
+syn match     reasonIdentifierType /\<\%(\l\|_\)\%(\k\|'\)*\( *=>\)\@!\>/ contained display skipwhite skipnl nextgroup=reasonIdentifierTypeArgList
+syn match     reasonIdentifierTypeModuleRef "\<\u\(\w\|'\)* *\."he=e-1    contained display skipwhite skipnl nextgroup=reasonIdentifierType,reasonIdentifierTypeModuleRef
+syn region    reasonIdentifierTypeArgList start="(" end=")"               contained display skipwhite skipnl contains=reasonIdentifierTypeArg,reasonIdentifierTypeArgModuleRef nextgroup=reasonIdentifierSeparator
+syn match     reasonIdentifierTypeArg /\<\%(\l\|_\)\%(\k\|'\)*\>/         contained display skipwhite skipnl nextgroup=reasonIdentifierTypeListSeparator
+syn match     reasonIdentifierTypeArgModuleRef "\<\u\(\w\|'\)* *\."he=e-1 contained display skipwhite skipnl nextgroup=reasonIdentifierTypeArg,reasonIdentifierTypeArgModuleRef
 syn match     reasonTypeDecl     /\<\%(\l\|_\)\%(\k\|'\)*\>/ contained display skipwhite skipnl nextgroup=reasonTypeDefAssign
 syn match     reasonTypeDefAssign /=/                        contained display skipwhite skipnl nextgroup=reasonVariantDef,reasonTypeDefRecord,reasonTypeDefVariantSeparator
 
@@ -318,6 +324,7 @@ hi def link reasonLabeledOptionalArgument reasonSeparator
 hi def link reasonRecordFieldFunctionArgumentSeparator reasonSeparator
 hi def link reasonExternalSeparator reasonSeparator
 hi def link reasonRecordFieldTypeSeparator reasonSeparator
+hi def link reasonIdentifierTypeSeparator reasonSeparator
 hi def link reasonRecordFieldSeparator reasonSeparator
 hi def link reasonArgumentSeparator reasonSeparator
 hi def link reasonTypeDefVariantSeparator reasonSeparator
@@ -328,6 +335,8 @@ hi def link reasonSemicolon reasonSeparator
 " include path
 hi def link reasonRecordFieldTypeModuleRef reasonModPath
 hi def link reasonRecordFieldTypeArgModuleRef reasonModPath
+hi def link reasonIdentifierTypeModuleRef reasonModPath
+hi def link reasonIdentifierTypeArgModuleRef reasonModPath
 hi def link reasonExternalFuncDefReturnTypeModuleRef reasonModPath
 hi def link reasonExternalFuncDefTypeArgModuleRef reasonModPath
 hi def link reasonExternalValueDefModuleRef reasonModPath
@@ -335,8 +344,10 @@ hi def link reasonExternalFuncDefArgumentModuleRef reasonModPath
 
 " types
 hi def link reasonRecordFieldType reasonType
+hi def link reasonIdentifierType reasonType
 hi def link reasonVariantArg reasonType
 hi def link reasonRecordFieldTypeArg reasonType
+hi def link reasonIdentifierTypeArg reasonType
 hi def link reasonExternalFuncDefTypeArg reasonType
 hi def link reasonExternalValueDefTypeArg reasonType
 hi def link reasonExternalFuncDefArgument reasonType
