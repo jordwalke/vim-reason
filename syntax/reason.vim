@@ -47,15 +47,16 @@ syn keyword   reasonStorage     when where fun mutable class pub pri val inherit
 
 syn match     reasonUnit /()/ display
 
-syn match     reasonIdentifier  /\<\%(\l\|_\)\%(\k\|'\)*\>/  contained display nextgroup=reasonIdentifierTypeSeparator
+syn match     reasonIdentifier  /\<\%(\l\|_\)\%(\k\|'\)*\>/  contained display skipwhite skipnl nextgroup=reasonIdentifierTypeSeparator
 syn match     reasonIdentifierTypeSeparator /:/ contained display skipwhite skipnl nextgroup=reasonIdentifierUnaryFunction,reasonIdentifierFunctionTypeDef,reasonIdentifierType,reasonIdentifierTypeModuleRef
 syn match     reasonIdentifierType /\<\%(\l\|_\)\%(\k\|'\)*\( *=>\)\@!\>/ contained display skipwhite skipnl nextgroup=reasonIdentifierTypeArgList
 syn match     reasonIdentifierTypeModuleRef "\<\u\(\w\|'\)* *\."he=e-1    contained display skipwhite skipnl nextgroup=reasonIdentifierType,reasonIdentifierTypeModuleRef
 syn region    reasonIdentifierTypeArgList start="(" end=")"               contained display skipwhite skipnl contains=reasonIdentifierTypeArg,reasonIdentifierTypeArgModuleRef nextgroup=reasonIdentifierSeparator
 syn match     reasonIdentifierTypeArg /\<\%(\l\|_\)\%(\k\|'\)*\>/         contained display skipwhite skipnl nextgroup=reasonIdentifierTypeListSeparator
 syn match     reasonIdentifierTypeArgModuleRef "\<\u\(\w\|'\)* *\."he=e-1 contained display skipwhite skipnl nextgroup=reasonIdentifierTypeArg,reasonIdentifierTypeArgModuleRef
-syn match     reasonTypeDecl     /\<\%(\l\|_\)\%(\k\|'\)*\>/ contained display skipwhite skipnl nextgroup=reasonTypeDefAssign
-syn match     reasonTypeDefAssign /=/                        contained display skipwhite skipnl nextgroup=reasonVariantDef,reasonTypeDefRecord,reasonTypeDefVariantSeparator
+syn match     reasonTypeDecl     /\<\%(\l\|_\)\%(\k\|'\)*\>/ contained display skipwhite skipnl nextgroup=reasonTypeDefAssign,reasonTypeVariablesDecl
+syn match     reasonTypeVariablesDecl /\(([^)]\+)\)/             contained display skipwhite skipnl nextgroup=reasonTypeDefAssign
+syn match     reasonTypeDefAssign /=/                        contained display skipwhite skipnl nextgroup=reasonVariantDef,reasonTypeDefRecord,reasonTypeDefVariantSeparator,reasonTypeDefFunction,reasonTypeDefUnaryFunctionDef
 
 syn match     reasonTypeDefVariantSeparator /|/     contained display skipwhite skipnl nextgroup=reasonVariantDef
 syn region    reasonTypeDefRecord start="{" end="}" contained display skipwhite skipnl contains=reasonRecordFieldName,reasonRecordFieldTypeSeparator,reasonRecordFieldSeparator
@@ -85,9 +86,24 @@ syn region    reasonVariantArgsDef start="(" end=")"       contained display ski
 syn match     reasonVariantArg /\<\%(\l\|_\)\%(\k\|'\)*\>/ contained display skipwhite skipnl nextgroup=reasonVariantArgListSeparator
 syn match     reasonVariantArgListSeparator /,/            contained display skipwhite skipnl nextgroup=reasonVariantArg
 
+" function type definition
+syn match     reasonTypeDefFunction /\((.*) *=>\)\@=/         contained display skipwhite skipnl nextgroup=reasonTypeDefFunctionArguments
+syn region    reasonTypeDefFunctionArguments start="(" end=")"       contained display skipwhite skipnl contains=reasonTypeDefFunctionArgument,reasonTypeDefFunctionLabeledArgument,reasonTypeDefFunctionDef nextgroup=reasonArrowCharacter
+syn match     reasonTypeDefFunctionArgument "\(\l\|_\)\(\w\|'\)*"            contained display skipwhite skipnl nextgroup=reasonTypeDefFunctionArgumentSeparator
+syn match     reasonTypeDefFunctionLabeledArgument "\~\(\l\|_\)\(\w\|'\)*"   contained display skipwhite skipnl nextgroup=reasonTypeDefFunctionArgumentPunning,reasonTypeDefFunctionArgumentSeparator,reasonTypeDefFunctionLabeledOptionalArgument,reasonTypeDefFunctionArgumentTypeDecl
+syn match     reasonTypeDefFunctionLabeledOptionalArgument /=?/              contained display skipwhite skipnl nextgroup=reasonTypeDefFunctionArgumentSeparator
+syn keyword   reasonTypeDefFunctionArgumentPunning as                        contained display skipwhite skipnl nextgroup=reasonTypeDefFunctionArgumentAlias
+syn match     reasonTypeDefFunctionArgumentAlias /\<\%(\l\|_\)\%(\k\|'\)*\>/ contained display skipwhite skipnl nextgroup=reasonTypeDefFunctionArgumentTypeDecl,reasonTypeDefFunctionArgumentSeparator
+syn match     reasonTypeDefFunctionArgumentTypeDecl /:/                      contained display skipwhite skipnl nextgroup=reasonTypeDefFunctionArgumentType
+syn match     reasonTypeDefFunctionArgumentType /\<\%(\l\|_\)\%(\k\|'\)*\>/  contained display skipwhite skipnl nextgroup=reasonTypeDefFunctionArgumentSeparator
+syn match     reasonTypeDefFunctionArgumentSeparator /,/                     contained display skipwhite skipnl nextgroup=reasonTypeDefFunctionArgument,reasonTypeDefFunctionLabeledArgument
+" unary function type
+syn match     reasonTypeDefUnaryFunctionDef /\(\(\l\|_\)\(\w\|'\)* *=>\)\@=/           display skipwhite skipnl nextgroup=reasonTypeDefUnaryFunctionArgument
+syn match     reasonTypeDefUnaryFunctionArgument "\(\l\|_\)\(\w\|'\)*"       contained display skipwhite skipnl nextgroup=reasonArrowCharacter
+
 " function definition
-syn match     reasonFunctionDef /\((.*) *=>\)\@=/                       display skipwhite skipnl nextgroup=reasonFunctionArguments
-syn region    reasonFunctionArguments start="(" end=")"       contained display skipwhite skipnl contains=reasonArgument,reasonLabeledArgument nextgroup=reasonArrowCharacter
+syn match     reasonFunctionDef /\((.*) *=>\)\@=/             contained display skipwhite skipnl nextgroup=reasonFunctionArguments
+syn region    reasonFunctionArguments start="(" end=")"       contained display skipwhite skipnl contains=reasonArgument,reasonLabeledArgument,reasonFunctionDef nextgroup=reasonArrowCharacter
 syn match     reasonArgument "\(\l\|_\)\(\w\|'\)*"            contained display skipwhite skipnl nextgroup=reasonArgumentSeparator
 syn match     reasonLabeledArgument "\~\(\l\|_\)\(\w\|'\)*"   contained display skipwhite skipnl nextgroup=reasonArgumentPunning,reasonArgumentSeparator,reasonLabeledOptionalArgument,reasonArgumentTypeDecl
 syn match     reasonLabeledOptionalArgument /=?/              contained display skipwhite skipnl nextgroup=reasonArgumentSeparator
@@ -330,6 +346,7 @@ hi def link reasonArgumentSeparator reasonSeparator
 hi def link reasonTypeDefVariantSeparator reasonSeparator
 hi def link reasonVariantArgListSeparator reasonSeparator
 hi def link reasonRecordFieldTypeListSeparator reasonSeparator
+hi def link reasonTypeDefAssign reasonSeparator
 hi def link reasonSemicolon reasonSeparator
 
 " include path
@@ -341,6 +358,7 @@ hi def link reasonExternalFuncDefReturnTypeModuleRef reasonModPath
 hi def link reasonExternalFuncDefTypeArgModuleRef reasonModPath
 hi def link reasonExternalValueDefModuleRef reasonModPath
 hi def link reasonExternalFuncDefArgumentModuleRef reasonModPath
+hi def link reasonExternalValueDefTypeArgModuleRef reasonModPath
 
 " types
 hi def link reasonRecordFieldType reasonType
@@ -358,6 +376,8 @@ hi def link reasonRecordFieldUnaryFunctionArgument reasonType
 hi def link reasonExternalFuncDefReturnType reasonType
 hi def link reasonExternalUnaryFunctionArgument reasonType
 hi def link reasonArgumentType reasonType
+hi def link reasonTypeDefUnaryFunctionArgument reasonType
+hi def link reasonTypeDefFunctionArgument reasonType
 
 syntax sync match reasonSemicolonSync grouphere NONE ";"
 
