@@ -298,7 +298,7 @@ function! console#ShortHl(prefix, hl, msg)
   " destroys +=T
   " exe "norm :echomsg msgNotif | echohl airline_error | echon prefix | echohl None\n"
   " echohl airline_error
-  exe "norm :echomsg msgNotif | echohl " . a:hl . " | echon prefix\n"
+  exe "norm! :echomsg msgNotif | echohl " . a:hl . " | echon prefix\n"
   silent echohl None
   let &shortmess=saved
   " If the log file is opened just refresh it right now.
